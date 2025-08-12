@@ -156,6 +156,24 @@ describe('list_fundings tool', () => {
       expect(responseData.count).toBe(responseData.fundings.length);
     });
 
+    it('should handle limit=100 and pass it correctly to API', async () => {
+      const result = await testHelper.callTool('list_fundings', {
+        limit: 100
+      });
+
+      expect(result.isError).toBeFalsy();
+      const responseData = JSON.parse(result.content[0].text);
+      
+      expect(responseData.success).toBe(true);
+      expect(responseData.count).toBeGreaterThanOrEqual(0);
+      expect(Array.isArray(responseData.fundings)).toBe(true);
+      
+      // The actual count should respect the limit parameter
+      // In our mock, we only have 4 items, so we should get all 4
+      expect(responseData.count).toBe(4);
+      expect(responseData.fundings.length).toBe(4);
+    });
+
     it('should combine multiple filters', async () => {
       const result = await testHelper.callTool('list_fundings', {
         status: FundingStatus.COMPLETE,
