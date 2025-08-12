@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { BitsoApiClient } from "../client.js";
-import { ToolResult } from "../types.js";
+import { ToolResult, FundingStatus, FundingMethod, WithdrawalStatus, WithdrawalMethod } from "../types.js";
 import { createLogger } from "../utils/logging.js";
 
 const logToFile = createLogger(import.meta.url, 'BITSO_TOOLS');
@@ -31,8 +31,8 @@ const GetWithdrawalsByOriginIdsSchema = z.object({
 const ListFundingsSchema = z.object({
   limit: z.number().int().positive().max(100).optional(),
   marker: z.string().optional(),
-  method: z.string().optional(),
-  status: z.string().optional(),
+  method: z.nativeEnum(FundingMethod).or(z.string()).optional(),
+  status: z.nativeEnum(FundingStatus).or(z.string()).optional(),
   fids: z.string().optional(),
 });
 
@@ -401,11 +401,13 @@ Details: ${JSON.stringify(withdrawal.details, null, 2)}`
           },
           method: {
             type: "string",
-            description: "Filter by funding method"
+            description: "Filter by funding method. Valid values: pixstark, praxis, usdc_trf, btc, eth_erc20",
+            enum: Object.values(FundingMethod)
           },
           status: {
-            type: "string",
-            description: "Filter by funding status"
+            type: "string", 
+            description: "Filter by funding status. Valid values: pending, complete, failed",
+            enum: Object.values(FundingStatus)
           },
           fids: {
             type: "string",
@@ -426,7 +428,11 @@ Details: ${JSON.stringify(withdrawal.details, null, 2)}`
             content: [
               {
                 type: "text",
-                text: "No fundings found with the specified criteria."
+                text: JSON.stringify({
+                  success: true,
+                  count: 0,
+                  fundings: []
+                }, null, 2)
               }
             ]
           };
