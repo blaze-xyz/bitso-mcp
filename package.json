@@ -1,0 +1,72 @@
+{
+  "name": "typescript-mcp-template",
+  "version": "1.0.0",
+  "description": "A production-ready TypeScript MCP server template with comprehensive testing, dual transport support, and best practices",
+  "license": "MIT",
+  "author": "Your Name",
+  "type": "module",
+  "bin": {
+    "typescript-mcp-template": "dist/src/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CLAUDE.md",
+    "context"
+  ],
+  "scripts": {
+    "build": "tsc && shx chmod +x dist/src/index.js",
+    "prepare": "npm run build",
+    "watch": "tsc --watch",
+    "dev": "tsc --watch",
+    "inspect": "node --inspect dist/src/index.js",
+    "debug": "npm run build && node --inspect dist/src/index.js --transport http --port 3000",
+    "start": "npm run build && node dist/src/index.js",
+    "start:http": "npm run build && node dist/src/index.js --transport http --port 3000",
+    "test": "vitest",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "test:ci": "vitest run --coverage --reporter=verbose",
+    "lint": "echo 'Add your preferred linter here (e.g., eslint, biome)'",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "create-tool": "node dist/scripts/create-tool.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.15.0",
+    "axios": "^1.10.0",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.19.9",
+    "@vitest/ui": "^3.2.4",
+    "msw": "^2.10.4",
+    "shx": "^0.3.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "template",
+    "typescript",
+    "server",
+    "claude",
+    "ai",
+    "tools"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/blaze-xyz/typeScript-MCP-template.git"
+  },
+  "homepage": "https://github.com/blaze-xyz/typeScript-MCP-template#readme",
+  "bugs": {
+    "url": "https://github.com/blaze-xyz/typeScript-MCP-template/issues"
+  }
+}
