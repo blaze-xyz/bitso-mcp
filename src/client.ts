@@ -1,9 +1,10 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import crypto from 'crypto';
 import { Config } from './config.js';
-import { ApiResponse, ExampleResource, ExampleResourceList } from './types.js';
+import { Withdrawal, Funding, WithdrawalListResponse, FundingListResponse } from './types.js';
 import { createLogger } from './utils/logging.js';
 
-export class ApiClient {
+export class BitsoApiClient {
   private client: AxiosInstance;
   private cache = new Map<string, { data: any; expires: number }>();
   private logToFile: (level: string, message: string, data?: any) => void;
@@ -15,12 +16,27 @@ export class ApiClient {
       baseURL: config.apiEndpoint,
       timeout: config.timeout,
       headers: {
-        'Authorization': `Bearer ${config.apiKey}`,
         'Content-Type': 'application/json',
       },
     });
 
     this.setupResponseInterceptors();
+  }
+
+  private generateSignature(nonce: string, httpMethod: string, requestPath: string, body?: string): string {
+    const message = nonce + httpMethod + requestPath + (body || '');
+    return crypto.createHmac('sha256', this.config.apiSecret).update(message).digest('hex');
+  }
+
+  private createAuthHeaders(httpMethod: string, requestPath: string, body?: string): Record<string, string> {
+    const nonce = Date.now().toString();
+    const signature = this.generateSignature(nonce, httpMethod, requestPath, body);
+
+    return {
+      'key': this.config.apiKey,
+      'signature': signature,
+      'nonce': nonce,
+    };
   }
 
   private setupResponseInterceptors(): void {
@@ -63,10 +79,15 @@ export class ApiClient {
 
   async testConnection(): Promise<boolean> {
     try {
-      this.logToFile('INFO', 'Testing API connection...');
+      this.logToFile('INFO', 'Testing Bitso API connection...');
       
-      // Implement your API health check endpoint here
-      const response = await this.client.get('/health');
+      const requestPath = '/api/v3/withdrawals';
+      const authHeaders = this.createAuthHeaders('GET', requestPath);
+      
+      const response = await this.client.get(requestPath, {
+        headers: authHeaders,
+        params: { limit: 1 }
+      });
       
       const isHealthy = response.status === 200;
       this.logToFile(isHealthy ? 'INFO' : 'WARN', 'Connection test result', { 
@@ -81,58 +102,140 @@ export class ApiClient {
     }
   }
 
-  async getResources(): Promise<ExampleResourceList> {
-    const cacheKey = this.getCacheKey('/resources');
-    const cached = this.getCachedData<ExampleResourceList>(cacheKey);
+  async getWithdrawals(params?: {
+    currency?: string;
+    limit?: number;
+    marker?: string;
+    method?: string;
+    origin_id?: string;
+    status?: string;
+    wid?: string;
+  }): Promise<WithdrawalListResponse> {
+    const cacheKey = this.getCacheKey('/api/v3/withdrawals', params);
+    const cached = this.getCachedData<WithdrawalListResponse>(cacheKey);
     
     if (cached) {
       return cached;
     }
 
     try {
-      this.logToFile('INFO', 'Fetching resources from API...');
+      const requestPath = '/api/v3/withdrawals';
+      const authHeaders = this.createAuthHeaders('GET', requestPath);
       
-      const response: AxiosResponse<ApiResponse<ExampleResourceList>> = await this.client.get('/resources');
+      this.logToFile('INFO', 'Fetching withdrawals from Bitso API...', params);
       
-      if (!response.data.success) {
-        throw new Error(response.data.message || 'API request failed');
-      }
-
-      const resources = response.data.data;
-      this.setCachedData(cacheKey, resources);
+      const response: AxiosResponse<WithdrawalListResponse> = await this.client.get(requestPath, {
+        headers: authHeaders,
+        params
+      });
       
-      this.logToFile('INFO', 'Resources fetched successfully', { count: resources.length });
-      return resources;
+      this.setCachedData(cacheKey, response.data);
+      
+      this.logToFile('INFO', 'Withdrawals fetched successfully', { count: response.data.payload?.length || 0 });
+      return response.data;
     } catch (error) {
-      this.logToFile('ERROR', 'Failed to fetch resources', error);
+      this.logToFile('ERROR', 'Failed to fetch withdrawals', error);
       throw error;
     }
   }
 
-  async getResource(id: string): Promise<ExampleResource> {
-    const cacheKey = this.getCacheKey(`/resources/${id}`);
-    const cached = this.getCachedData<ExampleResource>(cacheKey);
+  async getWithdrawal(wid: string): Promise<Withdrawal> {
+    const cacheKey = this.getCacheKey(`/api/v3/withdrawals/${wid}`);
+    const cached = this.getCachedData<Withdrawal>(cacheKey);
     
     if (cached) {
       return cached;
     }
 
     try {
-      this.logToFile('INFO', 'Fetching resource from API...', { id });
+      const requestPath = `/api/v3/withdrawals/${wid}`;
+      const authHeaders = this.createAuthHeaders('GET', requestPath);
       
-      const response: AxiosResponse<ApiResponse<ExampleResource>> = await this.client.get(`/resources/${id}`);
+      this.logToFile('INFO', 'Fetching withdrawal from Bitso API...', { wid });
+      
+      const response: AxiosResponse<{ success: boolean; payload: Withdrawal }> = await this.client.get(requestPath, {
+        headers: authHeaders
+      });
       
       if (!response.data.success) {
-        throw new Error(response.data.message || 'API request failed');
+        throw new Error('API request failed');
       }
 
-      const resource = response.data.data;
-      this.setCachedData(cacheKey, resource);
+      const withdrawal = response.data.payload;
+      this.setCachedData(cacheKey, withdrawal);
       
-      this.logToFile('INFO', 'Resource fetched successfully', { id, name: resource.name });
-      return resource;
+      this.logToFile('INFO', 'Withdrawal fetched successfully', { wid });
+      return withdrawal;
     } catch (error) {
-      this.logToFile('ERROR', 'Failed to fetch resource', { id, error });
+      this.logToFile('ERROR', 'Failed to fetch withdrawal', { wid, error });
+      throw error;
+    }
+  }
+
+  async getFundings(params?: {
+    limit?: number;
+    marker?: string;
+    method?: string;
+    status?: string;
+    fids?: string;
+  }): Promise<FundingListResponse> {
+    const cacheKey = this.getCacheKey('/api/v3/fundings', params);
+    const cached = this.getCachedData<FundingListResponse>(cacheKey);
+    
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      const requestPath = '/api/v3/fundings';
+      const authHeaders = this.createAuthHeaders('GET', requestPath);
+      
+      this.logToFile('INFO', 'Fetching fundings from Bitso API...', params);
+      
+      const response: AxiosResponse<FundingListResponse> = await this.client.get(requestPath, {
+        headers: authHeaders,
+        params
+      });
+      
+      this.setCachedData(cacheKey, response.data);
+      
+      this.logToFile('INFO', 'Fundings fetched successfully', { count: response.data.payload?.length || 0 });
+      return response.data;
+    } catch (error) {
+      this.logToFile('ERROR', 'Failed to fetch fundings', error);
+      throw error;
+    }
+  }
+
+  async getFunding(fid: string): Promise<Funding> {
+    const cacheKey = this.getCacheKey(`/api/v3/fundings/${fid}`);
+    const cached = this.getCachedData<Funding>(cacheKey);
+    
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      const requestPath = `/api/v3/fundings/${fid}`;
+      const authHeaders = this.createAuthHeaders('GET', requestPath);
+      
+      this.logToFile('INFO', 'Fetching funding from Bitso API...', { fid });
+      
+      const response: AxiosResponse<{ success: boolean; payload: Funding }> = await this.client.get(requestPath, {
+        headers: authHeaders
+      });
+      
+      if (!response.data.success) {
+        throw new Error('API request failed');
+      }
+
+      const funding = response.data.payload;
+      this.setCachedData(cacheKey, funding);
+      
+      this.logToFile('INFO', 'Funding fetched successfully', { fid });
+      return funding;
+    } catch (error) {
+      this.logToFile('ERROR', 'Failed to fetch funding', { fid, error });
       throw error;
     }
   }

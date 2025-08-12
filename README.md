@@ -1,8 +1,14 @@
-# TypeScript MCP Template
+# Bitso MCP Server
 
-A production-ready TypeScript template for building Model Context Protocol (MCP) servers with comprehensive testing, dual transport support, and development best practices.
+An MCP server for the Bitso API that provides tools to access withdrawals and fundings data. Built with TypeScript, featuring comprehensive testing, dual transport support, and production-ready best practices.
 
 ## Features
+
+🏦 **Bitso API Integration**
+- Complete Withdrawals API support (list, get by ID, get by multiple IDs, get by origin IDs)
+- Complete Fundings API support (list, get by ID)
+- Proper authentication with API key/secret and HMAC signature
+- Support for all API filtering and pagination parameters
 
 🚀 **Production Ready**
 - Dual transport support (stdio for Claude Desktop, HTTP for development)
@@ -30,11 +36,9 @@ A production-ready TypeScript template for building Model Context Protocol (MCP)
 
 ## Quick Start
 
-### 1. Clone and Setup
+### 1. Setup
 
 ```bash
-git clone https://github.com/blaze-xyz/typeScript-MCP-template.git my-mcp-server
-cd my-mcp-server
 npm install
 ```
 
@@ -42,11 +46,12 @@ npm install
 
 ```bash
 cp .env.example .env
-# Edit .env with your API configuration
+# Edit .env with your Bitso API credentials
 ```
 
 Required environment variables:
-- `API_KEY`: Your API key for the external service
+- `BITSO_API_KEY`: Your Bitso API key
+- `BITSO_API_SECRET`: Your Bitso API secret
 
 ### 3. Build and Test
 
@@ -68,16 +73,43 @@ Add to your Claude Desktop configuration (`claude_desktop_config.json`):
 ```json
 {
   "mcpServers": {
-    "my-mcp-server": {
+    "bitso-mcp-server": {
       "command": "node",
-      "args": ["/path/to/my-mcp-server/dist/src/index.js"],
+      "args": ["/path/to/bitso-mcp-server/dist/src/index.js"],
       "env": {
-        "API_KEY": "your-api-key"
+        "BITSO_API_KEY": "your-bitso-api-key",
+        "BITSO_API_SECRET": "your-bitso-api-secret"
       }
     }
   }
 }
 ```
+
+## Available Tools
+
+The server provides 6 tools to interact with the Bitso API:
+
+### Withdrawals Tools
+
+1. **`list_withdrawals`** - List withdrawals with optional filtering
+   - Parameters: `currency`, `limit`, `marker`, `method`, `origin_id`, `status`, `wid`
+
+2. **`get_withdrawal`** - Get specific withdrawal by ID
+   - Parameters: `wid` (required)
+
+3. **`get_withdrawals_by_ids`** - Get multiple withdrawals by comma-separated IDs
+   - Parameters: `wids` (required, e.g., "wid1,wid2,wid3")
+
+4. **`get_withdrawals_by_origin_ids`** - Get withdrawals by client-supplied origin IDs
+   - Parameters: `origin_ids` (required, e.g., "origin1,origin2,origin3")
+
+### Fundings Tools
+
+5. **`list_fundings`** - List fundings with optional filtering
+   - Parameters: `limit`, `marker`, `method`, `status`, `fids`
+
+6. **`get_funding`** - Get specific funding by ID
+   - Parameters: `fid` (required)
 
 ## Development Guide
 
@@ -86,10 +118,10 @@ Add to your Claude Desktop configuration (`claude_desktop_config.json`):
 ```
 src/
 ├── tools/           # MCP tool implementations
-│   └── example-tools.ts
+│   └── bitso-tools.ts  # Bitso API tools
 ├── utils/           # Shared utilities
 │   └── logging.ts   # Project-root-aware logging
-├── client.ts        # API client with caching
+├── client.ts        # Bitso API client with authentication
 ├── config.ts        # Environment configuration
 ├── types.ts         # TypeScript type definitions
 └── index.ts         # Main server entry point
@@ -114,7 +146,7 @@ npm run build
 npm run create-tool
 ```
 
-Or create manually following the pattern in `src/tools/example-tools.ts`:
+Or create manually following the pattern in `src/tools/bitso-tools.ts`:
 
 ```typescript
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -124,7 +156,7 @@ const MyToolSchema = z.object({
   param: z.string().min(1, "Parameter is required"),
 });
 
-export function registerMyTools(server: McpServer, client: ApiClient): void {
+export function registerMyTools(server: McpServer, client: BitsoApiClient): void {
   server.tool(
     "my_tool",
     {
@@ -267,12 +299,25 @@ try {
 const isHealthy = await client.testConnection();
 ```
 
-### Customizing for Your API
+### Bitso API Authentication
 
-1. Update `src/types.ts` with your API response types
-2. Modify `src/client.ts` to implement your API methods
-3. Update `tests/mocks/handlers.ts` with your API endpoints
-4. Implement your tools in `src/tools/`
+The server uses HMAC-SHA256 authentication required by the Bitso API:
+
+```typescript
+// Authentication headers are automatically generated
+const authHeaders = {
+  'key': config.apiKey,
+  'signature': hmacSignature,  // Generated using API secret
+  'nonce': timestamp
+};
+```
+
+Each request is signed using:
+- API Secret (from environment)
+- HTTP method
+- Request path
+- Request body (if any)
+- Current timestamp as nonce
 
 ## Deployment
 
@@ -297,8 +342,9 @@ The template includes a GitHub Actions workflow (`.github/workflows/ci.yml`):
 Production deployment requires:
 
 ```bash
-API_KEY=your-production-api-key
-API_ENDPOINT=https://your-api.com
+BITSO_API_KEY=your-production-api-key
+BITSO_API_SECRET=your-production-api-secret
+BITSO_API_ENDPOINT=https://api.bitso.com  # Production endpoint
 CACHE_TTL_SECONDS=300
 TIMEOUT=30000
 ```

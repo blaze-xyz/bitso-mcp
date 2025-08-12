@@ -10,18 +10,36 @@ export interface ToolError extends ToolResult {
   isError: true;
 }
 
-export interface ApiResponse<T = any> {
-  data: T;
+export interface Withdrawal {
+  wid: string;
+  status: string;
+  created_at: string;
+  currency: string;
+  method: string;
+  amount: string;
+  asset?: string;
+  network?: string;
+  protocol?: string;
+  details: Record<string, any>;
+  origin_id?: string;
+}
+
+export interface Funding {
+  fid: string;
+  status: string;
+  created_at: string;
+  currency: string;
+  method: string;
+  amount: string;
+  details: Record<string, any>;
+}
+
+export interface WithdrawalListResponse {
   success: boolean;
-  message?: string;
+  payload: Withdrawal[];
 }
 
-export interface ExampleResource {
-  id: string;
-  name: string;
-  description?: string;
-  createdAt: string;
-  updatedAt: string;
+export interface FundingListResponse {
+  success: boolean;
+  payload: Funding[];
 }
-
-export type ExampleResourceList = ExampleResource[];

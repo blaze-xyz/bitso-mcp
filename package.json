@@ -1,12 +1,12 @@
 {
-  "name": "typescript-mcp-template",
+  "name": "bitso-mcp-server",
   "version": "1.0.0",
-  "description": "A production-ready TypeScript MCP server template with comprehensive testing, dual transport support, and best practices",
+  "description": "MCP server for Bitso API - provides tools to access withdrawals and fundings data",
   "license": "MIT",
-  "author": "Your Name",
+  "author": "Bitso MCP",
   "type": "module",
   "bin": {
-    "typescript-mcp-template": "dist/src/index.js"
+    "bitso-mcp-server": "dist/src/index.js"
   },
   "files": [
     "dist",
@@ -54,19 +54,14 @@
   "keywords": [
     "mcp",
     "model-context-protocol",
-    "template",
+    "bitso",
+    "api",
     "typescript",
     "server",
     "claude",
     "ai",
-    "tools"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/blaze-xyz/typeScript-MCP-template.git"
-  },
-  "homepage": "https://github.com/blaze-xyz/typeScript-MCP-template#readme",
-  "bugs": {
-    "url": "https://github.com/blaze-xyz/typeScript-MCP-template/issues"
-  }
+    "tools",
+    "withdrawals",
+    "fundings"
+  ]
 }

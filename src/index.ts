@@ -4,8 +4,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { loadConfig } from './config.js';
-import { ApiClient } from './client.js';
-import { registerExampleTools } from './tools/example-tools.js';
+import { BitsoApiClient } from './client.js';
+import { registerBitsoTools } from './tools/bitso-tools.js';
 import { parseArgs } from 'util';
 
 // Parse command line arguments
@@ -31,7 +31,7 @@ const { values } = parseArgs({
 
 if (values.help) {
   console.log(`
-Usage: typescript-mcp-template [options]
+Usage: bitso-mcp-server [options]
 
 Options:
   -t, --transport <type>  Transport type: stdio or http (default: stdio)
@@ -57,7 +57,7 @@ const logFile = getLogFilePath(import.meta.url);
 
 // Load configuration
 let config;
-let client: ApiClient;
+let client: BitsoApiClient;
 
 try {
   logToFile('INFO', 'Loading configuration...');
@@ -67,9 +67,9 @@ try {
     cacheTtl: config.cacheTtlSeconds 
   });
   
-  logToFile('INFO', 'Initializing API client...');
-  client = new ApiClient(config);
-  logToFile('INFO', 'API client initialized');
+  logToFile('INFO', 'Initializing Bitso API client...');
+  client = new BitsoApiClient(config);
+  logToFile('INFO', 'Bitso API client initialized');
 } catch (error) {
   logToFile('ERROR', 'Failed to initialize API client', error);
   console.error('Failed to initialize API client:', error);
@@ -78,7 +78,7 @@ try {
 
 // Create MCP server
 const server = new McpServer({
-  name: "typescript-mcp-template",
+  name: "bitso-mcp-server",
   version: "1.0.0",
 });
 
@@ -98,7 +98,7 @@ try {
 }
 
 // Register all tool categories
-registerExampleTools(server, client);
+registerBitsoTools(server, client);
 
 // Start the server
 logToFile('INFO', `Starting MCP server with ${transport} transport...`);
@@ -112,7 +112,7 @@ if (transport === 'stdio') {
     logFile: logFile
   });
 
-  console.error("TypeScript MCP Template server running on stdio");
+  console.error("Bitso MCP server running on stdio");
   console.error(`Debug logs: ${logFile}`);
 } else if (transport === 'http') {
   // Create streamable HTTP transport
@@ -162,7 +162,7 @@ if (transport === 'stdio') {
       logFile: logFile
     });
 
-    console.error(`TypeScript MCP Template server running on http://localhost:${port}`);
+    console.error(`Bitso MCP server running on http://localhost:${port}`);
     console.error(`MCP endpoint: http://localhost:${port}/mcp`);
     console.error(`Debug logs: ${logFile}`);
   });
