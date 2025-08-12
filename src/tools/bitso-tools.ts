@@ -100,21 +100,26 @@ export function registerBitsoTools(server: McpServer, client: BitsoApiClient): v
           };
         }
         
-        const withdrawalList = response.payload.map(withdrawal => 
-          `• ${withdrawal.wid} - ${withdrawal.currency} ${withdrawal.amount}
-  Status: ${withdrawal.status}
-  Method: ${withdrawal.method}
-  Created: ${withdrawal.created_at}
-  ${withdrawal.origin_id ? `Origin ID: ${withdrawal.origin_id}` : ''}`
-        ).join('\n\n');
-        
         return {
           content: [
             {
               type: "text",
-              text: `Found ${response.payload.length} withdrawal(s):
-
-${withdrawalList}`
+              text: JSON.stringify({
+                success: true,
+                count: response.payload.length,
+                withdrawals: response.payload.map(withdrawal => ({
+                  wid: withdrawal.wid,
+                  status: withdrawal.status,
+                  currency: withdrawal.currency,
+                  amount: withdrawal.amount,
+                  method: withdrawal.method,
+                  created_at: withdrawal.created_at,
+                  origin_id: withdrawal.origin_id || null,
+                  asset: withdrawal.asset || null,
+                  network: withdrawal.network || null,
+                  protocol: withdrawal.protocol || null
+                }))
+              }, null, 2)
             }
           ]
         };
@@ -248,20 +253,23 @@ Details: ${JSON.stringify(withdrawal.details, null, 2)}`
           };
         }
         
-        const withdrawalList = response.payload.map(withdrawal => 
-          `• ${withdrawal.wid} - ${withdrawal.currency} ${withdrawal.amount}
-  Status: ${withdrawal.status}
-  Method: ${withdrawal.method}
-  Created: ${withdrawal.created_at}`
-        ).join('\n\n');
-        
         return {
           content: [
             {
               type: "text",
-              text: `Found ${response.payload.length} withdrawal(s):
-
-${withdrawalList}`
+              text: JSON.stringify({
+                success: true,
+                count: response.payload.length,
+                withdrawals: response.payload.map(withdrawal => ({
+                  wid: withdrawal.wid,
+                  status: withdrawal.status,
+                  currency: withdrawal.currency,
+                  amount: withdrawal.amount,
+                  method: withdrawal.method,
+                  created_at: withdrawal.created_at,
+                  origin_id: withdrawal.origin_id || null
+                }))
+              }, null, 2)
             }
           ]
         };
@@ -326,21 +334,23 @@ ${withdrawalList}`
           };
         }
         
-        const withdrawalList = response.payload.map(withdrawal => 
-          `• ${withdrawal.wid} - ${withdrawal.currency} ${withdrawal.amount}
-  Status: ${withdrawal.status}
-  Method: ${withdrawal.method}
-  Origin ID: ${withdrawal.origin_id}
-  Created: ${withdrawal.created_at}`
-        ).join('\n\n');
-        
         return {
           content: [
             {
               type: "text",
-              text: `Found ${response.payload.length} withdrawal(s):
-
-${withdrawalList}`
+              text: JSON.stringify({
+                success: true,
+                count: response.payload.length,
+                withdrawals: response.payload.map(withdrawal => ({
+                  wid: withdrawal.wid,
+                  status: withdrawal.status,
+                  currency: withdrawal.currency,
+                  amount: withdrawal.amount,
+                  method: withdrawal.method,
+                  created_at: withdrawal.created_at,
+                  origin_id: withdrawal.origin_id
+                }))
+              }, null, 2)
             }
           ]
         };
@@ -422,20 +432,23 @@ ${withdrawalList}`
           };
         }
         
-        const fundingList = response.payload.map(funding => 
-          `• ${funding.fid} - ${funding.currency} ${funding.amount}
-  Status: ${funding.status}
-  Method: ${funding.method}
-  Created: ${funding.created_at}`
-        ).join('\n\n');
-        
         return {
           content: [
             {
               type: "text",
-              text: `Found ${response.payload.length} funding(s):
-
-${fundingList}`
+              text: JSON.stringify({
+                success: true,
+                count: response.payload.length,
+                fundings: response.payload.map(funding => ({
+                  fid: funding.fid,
+                  status: funding.status,
+                  currency: funding.currency,
+                  amount: funding.amount,
+                  method: funding.method,
+                  created_at: funding.created_at,
+                  details: funding.details
+                }))
+              }, null, 2)
             }
           ]
         };

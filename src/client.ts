@@ -33,9 +33,7 @@ export class BitsoApiClient {
     const signature = this.generateSignature(nonce, httpMethod, requestPath, body);
 
     return {
-      'key': this.config.apiKey,
-      'signature': signature,
-      'nonce': nonce,
+      'Authorization': `Bitso ${this.config.apiKey}:${nonce}:${signature}`,
     };
   }
 
