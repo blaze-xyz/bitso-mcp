@@ -189,6 +189,11 @@ export class BitsoApiClient {
       const authHeaders = this.createAuthHeaders('GET', requestPath);
       
       this.logToFile('INFO', 'Fetching fundings from Bitso API...', params);
+      this.logToFile('DEBUG', 'Request details', { 
+        path: requestPath, 
+        params: params,
+        serializedParams: new URLSearchParams(params as any).toString()
+      });
       
       const response: AxiosResponse<FundingListResponse> = await this.client.get(requestPath, {
         headers: authHeaders,
@@ -197,7 +202,11 @@ export class BitsoApiClient {
       
       this.setCachedData(cacheKey, response.data);
       
-      this.logToFile('INFO', 'Fundings fetched successfully', { count: response.data.payload?.length || 0 });
+      this.logToFile('INFO', 'Fundings fetched successfully', { 
+        count: response.data.payload?.length || 0,
+        requestedLimit: params?.limit,
+        actualCount: response.data.payload?.length || 0
+      });
       return response.data;
     } catch (error) {
       this.logToFile('ERROR', 'Failed to fetch fundings', error);

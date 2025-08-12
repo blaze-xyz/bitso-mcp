@@ -10,6 +10,35 @@ export interface ToolError extends ToolResult {
   isError: true;
 }
 
+// Bitso API Enums
+export enum FundingStatus {
+  PENDING = 'pending',
+  COMPLETE = 'complete',
+  FAILED = 'failed'
+}
+
+export enum WithdrawalStatus {
+  PENDING = 'pending',
+  COMPLETE = 'complete',
+  FAILED = 'failed'
+}
+
+export enum FundingMethod {
+  PIXSTARK = 'pixstark',
+  PRAXIS = 'praxis',
+  USDC_TRF = 'usdc_trf',
+  BTC = 'btc',
+  ETH_ERC20 = 'eth_erc20'
+}
+
+export enum WithdrawalMethod {
+  PIXSTARK = 'pixstark',
+  PRAXIS = 'praxis',
+  USDC_TRF = 'usdc_trf',
+  BTC = 'btc',
+  ETH_ERC20 = 'eth_erc20'
+}
+
 export interface Withdrawal {
   wid: string;
   status: string;
