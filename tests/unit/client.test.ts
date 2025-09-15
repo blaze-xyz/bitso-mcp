@@ -19,11 +19,10 @@ describe('BitsoApiClient', () => {
   });
 
   describe('testConnection', () => {
-    it('should return false when connection fails', async () => {
-      // This test will fail against the real API since we don't have valid credentials
-      // but it verifies the method handles errors gracefully
+    it('should return true when connection succeeds', async () => {
+      // MSW will mock the API response to return success
       const result = await client.testConnection();
-      expect(result).toBe(false);
+      expect(result).toBe(true);
     });
   });
 });
