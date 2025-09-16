@@ -1,7 +1,9 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import fs from 'fs';
 import { BitsoApiClient } from "../client.js";
 import { ToolResult } from "../types.js";
+import { Funding } from "../types.js";
 import { createLogger } from "../utils/logging.js";
 
 const logToFile = createLogger(import.meta.url, 'BITSO_TOOLS');
@@ -38,6 +40,10 @@ const ListFundingsSchema = z.object({
 
 const GetFundingSchema = z.object({
   fid: z.string().min(1, "Funding ID is required"),
+});
+
+const ExportFundingsSchema = z.object({
+  filepath: z.string().min(1, "Filepath is required"),
 });
 
 export function registerBitsoTools(server: McpServer, client: BitsoApiClient): void {
@@ -537,6 +543,120 @@ Details: ${JSON.stringify(funding.details, null, 2)}`
             {
               type: "text",
               text: `Error retrieving funding: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ]
+        };
+      }
+    }
+  );
+
+  server.tool(
+    "export_fundings",
+    {
+      description: "Export all funding transactions to CSV file with columns: method, currency, gross, fee, net amount, timestamp, datetime",
+      inputSchema: {
+        type: "object",
+        properties: {
+          filepath: {
+            type: "string",
+            description: "Path where the CSV file should be created"
+          }
+        },
+        required: ["filepath"]
+      }
+    },
+    async (params): Promise<ToolResult> => {
+      try {
+        const validatedParams = ExportFundingsSchema.parse(params);
+        logToFile('INFO', 'Export fundings tool called', { filepath: validatedParams.filepath });
+        
+        const allFundings: Funding[] = [];
+        let marker: string | undefined;
+        
+        do {
+          const response = await client.getFundings({ 
+            limit: 100, 
+            marker 
+          });
+          
+          if (!response.success || !response.payload) {
+            break;
+          }
+          
+          allFundings.push(...response.payload);
+          
+          marker = response.payload.length === 100 ? response.payload[response.payload.length - 1].fid : undefined;
+        } while (marker);
+        
+        if (allFundings.length === 0) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: "No funding transactions found to export."
+              }
+            ]
+          };
+        }
+        
+        const csvHeader = "method,currency,gross,fee,net amount,timestamp,datetime\n";
+        const csvRows = allFundings.map(funding => {
+          const createdDate = new Date(funding.created_at);
+          const timestamp = Math.floor(createdDate.getTime() / 1000);
+          const datetime = createdDate.toLocaleString('en-US', {
+            month: '2-digit',
+            day: '2-digit', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+          }).replace(',', '');
+          
+          const gross = funding.amount;
+          const fee = "0";
+          const netAmount = funding.amount;
+          
+          return `${funding.method},${funding.currency},${gross},${fee},${netAmount},${timestamp},${datetime}`;
+        }).join('\n');
+        
+        const csvContent = csvHeader + csvRows;
+        
+        fs.writeFileSync(validatedParams.filepath, csvContent, 'utf8');
+        
+        logToFile('INFO', 'Fundings exported successfully', { 
+          filepath: validatedParams.filepath,
+          recordCount: allFundings.length 
+        });
+        
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Successfully exported ${allFundings.length} funding transactions to ${validatedParams.filepath}`
+            }
+          ]
+        };
+      } catch (error) {
+        logToFile('ERROR', 'Error in export_fundings tool', error);
+        
+        if (error instanceof z.ZodError) {
+          const errorMessage = error.errors.map(err => `${err.path.join('.')}: ${err.message}`).join(', ');
+          return {
+            content: [
+              {
+                type: "text",
+                text: `Validation error: ${errorMessage}`
+              }
+            ]
+          };
+        }
+        
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error exporting fundings: ${error instanceof Error ? error.message : String(error)}`
             }
           ]
         };
