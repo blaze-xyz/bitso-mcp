@@ -28,9 +28,16 @@ export class BitsoApiClient {
     return crypto.createHmac('sha256', this.config.apiSecret).update(message).digest('hex');
   }
 
-  private createAuthHeaders(httpMethod: string, requestPath: string, body?: string): Record<string, string> {
+  private createAuthHeaders(httpMethod: string, requestPath: string, body?: string, queryParams?: Record<string, any>): Record<string, string> {
     const nonce = Date.now().toString();
-    const signature = this.generateSignature(nonce, httpMethod, requestPath, body);
+    
+    let pathForSignature = requestPath;
+    if (queryParams && Object.keys(queryParams).length > 0) {
+      const queryString = new URLSearchParams(queryParams).toString();
+      pathForSignature = `${requestPath}?${queryString}`;
+    }
+    
+    const signature = this.generateSignature(nonce, httpMethod, pathForSignature, body);
 
     return {
       'Authorization': `Bitso ${this.config.apiKey}:${nonce}:${signature}`,
@@ -80,11 +87,12 @@ export class BitsoApiClient {
       this.logToFile('INFO', 'Testing Bitso API connection...');
       
       const requestPath = '/api/v3/withdrawals';
-      const authHeaders = this.createAuthHeaders('GET', requestPath);
+      const queryParams = { limit: 1 };
+      const authHeaders = this.createAuthHeaders('GET', requestPath, undefined, queryParams);
       
       const response = await this.client.get(requestPath, {
         headers: authHeaders,
-        params: { limit: 1 }
+        params: queryParams
       });
       
       const isHealthy = response.status === 200;
@@ -118,7 +126,7 @@ export class BitsoApiClient {
 
     try {
       const requestPath = '/api/v3/withdrawals';
-      const authHeaders = this.createAuthHeaders('GET', requestPath);
+      const authHeaders = this.createAuthHeaders('GET', requestPath, undefined, params);
       
       this.logToFile('INFO', 'Fetching withdrawals from Bitso API...', params);
       
@@ -186,7 +194,7 @@ export class BitsoApiClient {
 
     try {
       const requestPath = '/api/v3/fundings';
-      const authHeaders = this.createAuthHeaders('GET', requestPath);
+      const authHeaders = this.createAuthHeaders('GET', requestPath, undefined, params);
       
       this.logToFile('INFO', 'Fetching fundings from Bitso API...', params);
       

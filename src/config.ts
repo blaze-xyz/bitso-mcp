@@ -1,7 +1,7 @@
 import { config } from 'dotenv';
 import { z } from 'zod';
 
-config();
+config({ override: true });
 
 const ConfigSchema = z.object({
   // Bitso API Configuration
